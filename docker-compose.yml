@@ -1,0 +1,56 @@
+version: "3.9"
+
+volumes:
+  pg_data:
+
+services:
+  db:
+    container_name: db
+    ports:
+      - "5432:5432"
+    build:
+      context: .
+      dockerfile: pg.Dockerfile
+    env_file:
+      - .env
+
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d database"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: on-failure
+
+  bot:
+    container_name: bot
+    build:
+      context: .
+      dockerfile: Dockerfile
+    #volumes:
+        #- ./app:/src/app
+    command: python -m app.main
+    depends_on:
+       db:
+         condition: service_healthy
+    links:
+       - db
+    restart: always
+
+  #web:
+  #  container_name: web
+  #  build:
+  #    context: .
+  #    dockerfile: Dockerfile
+  #  ports:
+  #    - "8000:8000"
+  #  volumes:
+  #    - ./app:/src/app
+  #  depends_on:
+  #    #- db
+  #    db:
+  #      condition: service_healthy
+  #  links:
+  #    - db
+  #  restart: always
